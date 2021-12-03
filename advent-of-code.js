@@ -12,6 +12,7 @@ console.info(" --------------------------------------- ");
 console.info("   A D V E N T  O F  C O D E  2 0 2 1 ");
 console.info("   (See https://adventofcode.com/2021)");
 console.info(" --------------------------------------- ");
+console.info("   Run at", new Date());
 console.info("");
 
 // Day 1a: Determine the nuber of times the depth increases
