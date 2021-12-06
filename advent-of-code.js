@@ -35,8 +35,11 @@ console.info("Day #3a: Product of Epsilon and Gamma is:", epsilonGammaProduct(in
 // Day 3b: the life support rating, which can be determined by multiplying the oxygen generator rating by the CO2 scrubber rating
 console.info("    #3a: Life Support Rating is:", lifeSupportRating(inputData.someDiagnostics));
 
-// Day 4a: Bingo vs. the Squid or whatever
-console.info("Day #4a: The board I want to play with has a valuie of:", findBestBingoBoard(inputData.someBingoNums, inputData.someBingoBoards));
+// Day 4a: Bingo vs. the Squid to win
+console.info("Day #4a: The board I want to play with has a value of:", findBestBingoBoard(inputData.someBingoNums, inputData.someBingoBoards));
+
+// Day 4b: Bingo vs. the Squid to lose on purpose
+console.info("    #4b: To lose, I should play the board with a value of:", findWorstBingoBaord(inputData.someBingoNums, inputData.someBingoBoards));
 
 /**
  * Day #1a: Determine the nuber of times the depth increases
@@ -286,10 +289,8 @@ function reduceOnCommonBit(ary, isMostCommon, bitPos) {
  * To guarantee victory against the giant squid, figure out which board will win first. What will your final score be 
  *   if you choose that board?
  * 
- * @param {*} inputData 
- * @param {*} someBingoNums 
- * @param {*} inputData 
- * @param {*} someBingoBoards 
+ * @param {*} someNums      Bingo numbers called in order
+ * @param {*} someBoards    Bingo boards array (array of arrays)
  */
 function findBestBingoBoard(someNums, someBoards) {
     let winningBoardIdx = null;
@@ -297,29 +298,20 @@ function findBestBingoBoard(someNums, someBoards) {
     let lastNumberCalled = null;
     let affectedBoards = [];
 
-    // For each Bingo Number Drawn
+    // For each Bingo Number Drawn (as a for loop, to easily kick out)
     for ( var numberIdx = 0; numberIdx < someNums.length; numberIdx++ ) {
         let aNumber = someNums[numberIdx];
 
-        // For each Bingo Board
-        _.each(someBoards, function(aBoard, boardIdx, list) {
-            // For each row of five, see if we have the number.  If so, mark it.
-            _.each(aBoard, function(aRow, rowIdx, list) {
-                _.each(aRow, function(aCell, cellIdx, list) {
-                    // Hit, clear the cell, and save off the affected board
-                    if ( aCell === aNumber ) {
-                        aRow[cellIdx] = "*";
-                        affectedBoards.push(boardIdx);
-                    }
-                });
-            });            
-        });
+        // For each Bingo Board, update the number played to a *
+        affectedBoards = updateBoardsForNumber(someBoards, aNumber, affectedBoards);
 
-        // For each affected board, see if we have a winner.  Small optimization, we can't have a winner until we have five numbers.
+        // For each affected board, see if we have a winner.  Small optimization, we can't have a winner until we have five numbers drawn.
         if ( numberIdx >= 4 ) {
               
             // Get a unique set of board numbers to process since one number could be on a board more than once
             let boards = affectedBoards.filter((v, i, a) => a.indexOf(v) === i);
+
+            // Check each board affected by the last number drawn to see if it won
             for ( var i = 0; i < boards.length; i++ ) {
                 let aBoardIdx = boards[i];
                 if ( checkBoardForWin(someBoards[aBoardIdx]) ) {
@@ -334,12 +326,14 @@ function findBestBingoBoard(someNums, someBoards) {
 
         // See if we have found a winning board!
         if ( winningBoardIdx != null ) {
+            // Get teh board, and sum up the numbers not yet removed
             let board = someBoards[winningBoardIdx];
             for ( var i = 0; i < board.length; i++ ) {
                 let numbers = _.filter(board[i], function(item) { return item != "*"; });
                 winningBoardSum += eval(numbers.join("+"));
             }
             
+            // Save off the last number called, and leave our numbers loop
             lastNumberCalled = aNumber;
             break;
         }
@@ -352,9 +346,9 @@ function findBestBingoBoard(someNums, someBoards) {
 
 
 /**
+ * Look for 5 * in a row, horizontal or vertical.  If found, return true.
  * 
- * 
- * @param {*} aBoard 
+ * @param {*} aBoard Bingo board matrix
  */
 function checkBoardForWin(aBoard) {
 
@@ -388,11 +382,123 @@ function checkBoardForWin(aBoard) {
 
 
 /**
- * 
+ * Look for 5 * in a row
  * 
  * @param {*} someCells 
  * @returns 
  */
 function checkCellsForWin(someCells) {
     return ( someCells === "*****" );
+}
+
+
+/**
+ * You aren't sure how many bingo boards a giant squid could play at once, so rather than waste time counting its arms, 
+ *  the safe thing to do is to figure out which board will win last and choose that one. That way, no matter which boards 
+ *  it picks, it will win for sure.
+ * 
+ * Figure out which board will win last. Once it wins, what would its final score be?
+ * 
+ * @param {*} someNums 
+ * @param {*} someBoards 
+ */
+function findWorstBingoBaord(someNums, someBoards) {
+    let affectedBoards = [];
+    let winningBoards = [];
+    let worstBoardSum = 0;
+    let lastNumberCalled = null;
+
+    // For each Bingo Number Drawn (as a for loop, to easily kick out)
+    for ( var numberIdx = 0; numberIdx < someNums.length; numberIdx++ ) {
+        let aNumber = someNums[numberIdx];
+
+        // For each Bingo Board
+        affectedBoards = updateBoardsForNumber(someBoards, aNumber, affectedBoards);
+
+        // For each affected board, see if we have a winner.  Small optimization, we can't have a winner until we have five numbers drawn.
+        if ( numberIdx >= 4 ) {
+              
+            // Get a unique set of board numbers to process since one number could be on a board more than once
+            let boards = affectedBoards.filter((v, i, a) => a.indexOf(v) === i);
+
+            // Check each board affected by the last number drawn to see if it won
+            for ( var i = 0; i < boards.length; i++ ) {
+                let aBoardIdx = boards[i];
+                if ( checkBoardForWin(someBoards[aBoardIdx]) ) {
+                    // Doin't add the some board twice to winning boards
+                    if ( _.indexOf(winningBoards, aBoardIdx) === -1 ) {
+                        //boardToLog(aBoardIdx, someBoards[aBoardIdx], aNumber);
+                        winningBoards.push(aBoardIdx);
+                        if ( winningBoards.length === 100 ) break;    
+                    }
+                }
+            }
+
+            // We processed them, so clear affected boards to continue looking for a winner
+            affectedBoards = [];
+        }
+
+        // See if we have found the very worst board!
+        if ( winningBoards.length === 100 ) {
+            let worstBoardIdx = winningBoards.pop();
+
+            // Get the board, and sum up the numbers not yet removed
+            let board = someBoards[worstBoardIdx];
+            //boardToLog(worstBoardIdx, someBoards[worstBoardIdx], aNumber);
+            for ( var i = 0; i < board.length; i++ ) {
+                let numbers = _.filter(board[i], function(item) { return item != "*"; });
+                worstBoardSum += eval(numbers.join("+"));
+            }
+            
+            // Save off the last number called, and leave our numbers loop
+            lastNumberCalled = aNumber;
+            break;
+        }
+    }  
+
+    // Return our solution
+    return lastNumberCalled * worstBoardSum;
+}
+
+/**
+ * Update each board with * for a played number, and return which boards were touched
+ * 
+ * @param {*} someBoards 
+ * @param {*} aNumber 
+ * @param {*} affectedBoards 
+ * @returns 
+ */
+function updateBoardsForNumber(someBoards, aNumber, affectedBoards) {
+
+    // For each Bingo Board
+    _.each(someBoards, function(aBoard, boardIdx, list) {
+        // For each row of five, see if we have the number.  If so, mark it.
+        _.each(aBoard, function(aRow, rowIdx, list) {
+            _.each(aRow, function(aCell, cellIdx, list) {
+                // Hit, clear the cell, and save off the affected board
+                if ( aCell === aNumber ) {
+                    aRow[cellIdx] = "*";
+                    affectedBoards.push(boardIdx);
+                }
+            });
+        });            
+    });    
+    return affectedBoards;
+}
+
+
+/**
+ * 
+ * 
+ * @param {*} aBoardIdx 
+ * @param {*} aBoard 
+ * @param {*} lastNumber 
+ */
+function boardToLog(aBoardIdx, aBoard, lastNumber) {
+    console.log("Board:", aBoardIdx, ", with last number drawn of", lastNumber);
+    console.log(" ", aBoard[0]);
+    console.log(" ", aBoard[1]);
+    console.log(" ", aBoard[2]);
+    console.log(" ", aBoard[3]);
+    console.log(" ", aBoard[4]);
 }
