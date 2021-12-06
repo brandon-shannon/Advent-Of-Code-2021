@@ -35,6 +35,9 @@ console.info("Day #3a: Product of Epsilon and Gamma is:", epsilonGammaProduct(in
 // Day 3b: the life support rating, which can be determined by multiplying the oxygen generator rating by the CO2 scrubber rating
 console.info("    #3a: Life Support Rating is:", lifeSupportRating(inputData.someDiagnostics));
 
+// Day 4a: Bingo vs. the Squid or whatever
+console.info("Day #4a: The board I want to play with has a valuie of:", findBestBingoBoard(inputData.someBingoNums, inputData.someBingoBoards));
+
 /**
  * Day #1a: Determine the nuber of times the depth increases
  * 
@@ -272,4 +275,124 @@ function reduceOnCommonBit(ary, isMostCommon, bitPos) {
         aryToPass = (aryOn.length < aryOff.length) ? aryOn : aryOff;
 
     return reduceOnCommonBit(aryToPass, isMostCommon, (bitPos+1));
+}
+
+
+/**
+ * The score of the winning board can now be calculated. Start by finding the sum of all unmarked numbers on that board; 
+ *   in this case, the sum is 188. Then, multiply that sum by the number that was just called when the board won, 24, 
+ *   to get the final score, 188 * 24 = 4512.
+ * 
+ * To guarantee victory against the giant squid, figure out which board will win first. What will your final score be 
+ *   if you choose that board?
+ * 
+ * @param {*} inputData 
+ * @param {*} someBingoNums 
+ * @param {*} inputData 
+ * @param {*} someBingoBoards 
+ */
+function findBestBingoBoard(someNums, someBoards) {
+    let winningBoardIdx = null;
+    let winningBoardSum = 0;
+    let lastNumberCalled = null;
+    let affectedBoards = [];
+
+    // For each Bingo Number Drawn
+    for ( var numberIdx = 0; numberIdx < someNums.length; numberIdx++ ) {
+        let aNumber = someNums[numberIdx];
+
+        // For each Bingo Board
+        _.each(someBoards, function(aBoard, boardIdx, list) {
+            // For each row of five, see if we have the number.  If so, mark it.
+            _.each(aBoard, function(aRow, rowIdx, list) {
+                _.each(aRow, function(aCell, cellIdx, list) {
+                    // Hit, clear the cell, and save off the affected board
+                    if ( aCell === aNumber ) {
+                        aRow[cellIdx] = "*";
+                        affectedBoards.push(boardIdx);
+                    }
+                });
+            });            
+        });
+
+        // For each affected board, see if we have a winner.  Small optimization, we can't have a winner until we have five numbers.
+        if ( numberIdx >= 4 ) {
+              
+            // Get a unique set of board numbers to process since one number could be on a board more than once
+            let boards = affectedBoards.filter((v, i, a) => a.indexOf(v) === i);
+            for ( var i = 0; i < boards.length; i++ ) {
+                let aBoardIdx = boards[i];
+                if ( checkBoardForWin(someBoards[aBoardIdx]) ) {
+                    winningBoardIdx = aBoardIdx;
+                    break;
+                }
+            }
+
+            // We processed them, so clear affected boards to continue looking for a winner
+            affectedBoards = [];
+        }
+
+        // See if we have found a winning board!
+        if ( winningBoardIdx != null ) {
+            let board = someBoards[winningBoardIdx];
+            for ( var i = 0; i < board.length; i++ ) {
+                let numbers = _.filter(board[i], function(item) { return item != "*"; });
+                winningBoardSum += eval(numbers.join("+"));
+            }
+            
+            lastNumberCalled = aNumber;
+            break;
+        }
+
+    }
+
+    // For the winning board, get the sum of all non-marked numbers on that board and multiple by the board number.
+    return winningBoardSum * lastNumberCalled;
+}
+
+
+/**
+ * 
+ * 
+ * @param {*} aBoard 
+ */
+function checkBoardForWin(aBoard) {
+
+    let isWinner = false;
+    let cols = [[], [], [], [], []];
+
+    for ( let i = 0; i < aBoard.length; i++ ) {
+        let aRow = aBoard[i];
+        if ( checkCellsForWin(aRow.join("")) ) {
+            isWinner = true;
+            break;
+        }
+
+        // Transform cells into virtual rows
+        cols[0].push( aRow[0] );
+        cols[1].push( aRow[1] );
+        cols[2].push( aRow[2] );
+        cols[3].push( aRow[3] );
+        cols[4].push( aRow[4] );
+    }
+
+    for ( let i = 0; i < cols.length; i++ ) {
+        if ( checkCellsForWin(cols[i].join("")) ) {
+            isWinner = true;
+            break;
+        }
+    }
+
+    return isWinner;
+}
+
+
+/**
+ * 
+ * 
+ * @param {*} someCells 
+ * @returns 
+ */
+function checkCellsForWin(someCells) {
+    return ( someCells === "*****" );
 }
