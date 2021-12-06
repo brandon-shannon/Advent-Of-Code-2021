@@ -41,6 +41,12 @@ console.info("Day #4a: The board I want to play with has a value of:", findBestB
 // Day 4b: Bingo vs. the Squid to lose on purpose
 console.info("    #4b: To lose, I should play the board with a value of:", findWorstBingoBaord(inputData.someBingoNums, inputData.someBingoBoards));
 
+// Day 5a: Avoid overlapping heat vents
+console.info("Day #5a: Avoding overlapping heat vent locations, without diagonals, of which there are", findOverlappingVents(inputData.someHeatVents, true));
+
+// Day 5a: Avoid overlapping heat vents
+console.info("    #5b: Avoding overlapping heat vent locations, of which there are", findOverlappingVents(inputData.someHeatVents, false));
+
 /**
  * Day #1a: Determine the nuber of times the depth increases
  * 
@@ -501,4 +507,63 @@ function boardToLog(aBoardIdx, aBoard, lastNumber) {
     console.log(" ", aBoard[2]);
     console.log(" ", aBoard[3]);
     console.log(" ", aBoard[4]);
+}
+
+
+/**
+ * To avoid the most dangerous areas, you need to determine the number of points where at least two lines overlap. 
+ *   In the above example, this is anywhere in the diagram with a 2 or larger - a total of 5 points.
+ * Consider only horizontal and vertical lines. At how many points do at least two lines overlap?
+ * 
+ * 
+ * @param {*} someHeatVents 
+ */
+function findOverlappingVents(someHeatVents, removeDiagonals) {
+    let someVents = someHeatVents;
+
+    // Reduce our list to only vertical and horizontal vent vectors
+    //  "For now, only consider horizontal and vertical lines: lines where either x1 = x2 or y1 = y2."
+    if ( removeDiagonals ) {
+        someVents = _.filter(someHeatVents, function(aVector) {
+            let p1 = aVector[0];
+            let p2 = aVector[1];
+            return ( (p1[0] === p2[0]) || (p1[1] === p2[1]) );
+        });    
+    }
+
+    // Build the world
+    let world = new Array(999);
+    for (let i = 0;  i < world.length; i++) {
+        world[i] = new Array(999).fill(0);
+    }
+
+    // For each vector, increment cells touched
+    _.each(someVents, function(aVent, index, list) {
+        let p1 = aVent[0];
+        let p2 = aVent[1];
+
+        let fromX = p1[0];
+        let toX = p2[0];
+        let fromY = p1[1];
+        let toY = p2[1];
+        
+        // Touch each cell on the path
+        let xIdx = fromX;
+        let yIdx = fromY;
+        world[xIdx][yIdx]++;
+        while ((xIdx !== toX) || (yIdx !== toY)) {
+            if ( fromX !== toX ) (fromX <= toX) ? xIdx++ : xIdx--;
+            if ( fromY !== toY ) (fromY <= toY) ? yIdx++ : yIdx--;
+            world[xIdx][yIdx]++;
+        }
+    });
+
+    // Find the number of values 2 or greater in world
+    let totalCells = 0;
+    for ( var i = 0; i <= 999; i++ ) {
+        let someCells = _.filter(world[i], function(cell) { return cell > 1; });
+        totalCells += someCells.length;
+    }
+
+    return totalCells;
 }
