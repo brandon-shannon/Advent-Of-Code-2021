@@ -61,6 +61,10 @@ console.info("Day #7a: Crabs should align to position", result[0], "at a cost of
 result = alignCrabs2(inputData.someCrabPositions);
 console.info("    #7b: Crabs should align to position", result[0], "at a cost of", result[1]);
 
+// Day 8a: What the ?
+console.info("Day #8a: No of outputs using 1, 4, 7, 8:", decipherSignals(inputData.sevenSignals));
+
+
 
 /**
  * Day #1a: Determine the nuber of times the depth increases
@@ -733,14 +737,40 @@ function average(values) {
    * @param {*} someCrabPos Numeric array of crab horizonal positions
    */
 function alignCrabs2(someCrabPos) {
-    //       488 for 98040703
-    // NOTE: 487 for 98039615 is too high!
-    //       486 for 98039527
-    //       485 for 98040439
     let goalPos = parseInt(average(someCrabPos));
     let totalFuel = _.reduce(someCrabPos, function(cost, currentPos) { 
         let moves = Math.abs(goalPos - currentPos);
         return cost + (((moves + 1) / 2) * moves);
     }, 0);
     return [goalPos, totalFuel];
+}
+
+
+/**
+ * Because the digits 1, 4, 7, and 8 each use a unique number of segments, you should be able to tell 
+ *  which combinations of signals correspond to those digits. Counting only digits in the output values 
+ * (the part after | on each line), in the above example, there are 26 instances of digits that use a 
+ * unique number of segments (highlighted above).
+ * 
+ * In the output values, how many times do digits 1, 4, 7, or 8 appear?
+ * 
+ * 1 - 2 segments
+ * 4 - 4 segments
+ * 7 - 3 segments
+ * 8 - 7 segments 
+ * 
+ * @param {*} sevenSignals 
+ */
+function decipherSignals(someSignals) {
+    let count = 0;
+    _.each(someSignals, function( aSignal, idx, list) {
+        let parts = aSignal.split("|");
+        let outputs = parts[1].trim().split(" ");
+        let sum = _.reduce(outputs, function(cnt, output) {
+            let len = output.length;
+            return (len === 2 || len === 3 || len === 4 || len === 7) ? cnt + 1 : cnt;
+        }, 0);
+        count = count + sum;
+    });
+    return count;
 }
