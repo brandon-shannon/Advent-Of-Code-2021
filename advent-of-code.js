@@ -53,6 +53,15 @@ console.info("Day #6a: After 80 days we'll have this many laternfish:", trackFis
 // Day 6b: Laternfish growth rates
 console.info("    #6b: After 256 days we'll have this many laternfish:", trackFishGrowth2(inputData.someFish, 256));
 
+// Day 7a: Horizontally align crab positions w/ the least possible work
+let result = alignCrabs(inputData.someCrabPositions);
+console.info("Day #7a: Crabs should align to position", result[0], "at a cost of", result[1]);
+
+// Day 7b: Horizontally align crab positions w/ the least possible work
+result = alignCrabs2(inputData.someCrabPositions);
+console.info("    #7b: Crabs should align to position", result[0], "at a cost of", result[1]);
+
+
 /**
  * Day #1a: Determine the nuber of times the depth increases
  * 
@@ -668,4 +677,70 @@ function trackFishGrowth(someFish, days) {
     }
 
     return _.reduce(newFish, function(sum, num) { return sum + num }, 0);
+}
+
+
+/**
+ * Determine the horizontal position that the 1,000 crabs can align to using the least fuel possible. 
+ * How much fuel must they spend to align to that position?
+ * 
+ * Note on initial positions: Min = 0, Max = 1994
+ * 
+ * @param {*} someCrabPos Numeric array of crab horizonal positions
+ */
+function alignCrabs(someCrabPos) {
+    let goalPos = median(someCrabPos);
+    let totalFuel = _.reduce(someCrabPos, function(cost, currentPos) { return cost + Math.abs(currentPos - goalPos) }, 0);
+    return [goalPos, totalFuel];
+}
+
+
+/**
+ * Helper function to find the median in a set of numbers
+ * 
+ * @param {*} values 
+ * @returns 
+ */
+function median(values) {
+    if( values.length ===0 ) throw new Error("No inputs");
+  
+    values.sort(function(a,b){
+      return a-b;
+    });
+  
+    var half = Math.floor(values.length / 2);
+    
+    if (values.length % 2)
+      return values[half];
+    
+    return (values[half - 1] + values[half]) / 2.0;
+}
+
+
+function average(values) {
+    if( values.length ===0 ) throw new Error("No inputs");
+    return (_.reduce(values, function(total, value) { return total + value }, 0) / values.length);
+}
+
+  /**
+   * As it turns out, crab submarine engines don't burn fuel at a constant rate. 
+   * Instead, each change of 1 step in horizontal position costs 1 more unit of fuel than the last: the first step costs 1, the second step costs 2, the third step costs 3, and so on.
+   * How much fuel must they spend to align to that position?
+   * 
+   * Move from 16 to 5: 66 fuel (11 moves. 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 = 66 == ((Moves + 1) / 2) * Moves )
+   * Move from 1 to 5: 10 fuel ( 4 Moves + 1 = 5.  5/2 = 2.5.  2.5*4 = 10)
+   * 
+   * @param {*} someCrabPos Numeric array of crab horizonal positions
+   */
+function alignCrabs2(someCrabPos) {
+    //       488 for 98040703
+    // NOTE: 487 for 98039615 is too high!
+    //       486 for 98039527
+    //       485 for 98040439
+    let goalPos = parseInt(average(someCrabPos));
+    let totalFuel = _.reduce(someCrabPos, function(cost, currentPos) { 
+        let moves = Math.abs(goalPos - currentPos);
+        return cost + (((moves + 1) / 2) * moves);
+    }, 0);
+    return [goalPos, totalFuel];
 }
