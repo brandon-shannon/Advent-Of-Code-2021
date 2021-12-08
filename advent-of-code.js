@@ -42,10 +42,16 @@ console.info("Day #4a: The board I want to play with has a value of:", findBestB
 console.info("    #4b: To lose, I should play the board with a value of:", findWorstBingoBaord(inputData.someBingoNums, inputData.someBingoBoards));
 
 // Day 5a: Avoid overlapping heat vents
-console.info("Day #5a: Avoding overlapping heat vent locations, without diagonals, of which there are", findOverlappingVents(inputData.someHeatVents, true));
+console.info("Day #5a: Avoiding overlapping heat vent locations, without diagonals, of which there are", findOverlappingVents(inputData.someHeatVents, true));
 
-// Day 5a: Avoid overlapping heat vents
-console.info("    #5b: Avoding overlapping heat vent locations, of which there are", findOverlappingVents(inputData.someHeatVents, false));
+// Day 5b: Avoid overlapping heat vents
+console.info("    #5b: Avoiding overlapping heat vent locations, of which there are", findOverlappingVents(inputData.someHeatVents, false));
+
+// Day 6a: Laternfish growth rates
+console.info("Day #6a: After 80 days we'll have this many laternfish:", trackFishGrowth(inputData.someFish, 80));
+
+// Day 6b: Laternfish growth rates
+console.info("    #6b: After 256 days we'll have this many laternfish:", trackFishGrowth2(inputData.someFish, 256));
 
 /**
  * Day #1a: Determine the nuber of times the depth increases
@@ -566,4 +572,100 @@ function findOverlappingVents(someHeatVents, removeDiagonals) {
     }
 
     return totalCells;
+}
+
+
+/**
+ * So, suppose you have a lanternfish with an internal timer value of 3:
+ *   After one day, its internal timer would become 2.
+ *   After another day, its internal timer would become 1.
+ *   After another day, its internal timer would become 0.
+ *   After another day, its internal timer would reset to 6, and it would create a new lanternfish with an internal timer of 8.
+ *   After another day, the first lanternfish would have an internal timer of 5, and the second lanternfish would have an internal timer of 7.
+ * 
+ * A lanternfish that creates a new fish resets its timer to 6, not 7 (because 0 is included as a valid timer value). 
+ * The new lanternfish starts with an internal timer of 8 and does not start counting down until the next day. Each day, a 0 becomes a 6 
+ * and adds a new 8 to the end of the list, while each other number decreases by 1 if it was present at the start of the day.
+ * 
+ * Find a way to simulate lanternfish. How many lanternfish would there be after 80 days?
+ * 
+ * @param {*} someFish  Array of fish ages
+ * @param {*} days      Days to model
+ */
+function trackFishGrowth(someFish, days) {
+    let newFish = [];
+
+    // For <days> days...
+    for ( var day = 1; day <= days; day++ ) {
+        // For each fish alive today...
+        let babies = 0;
+        newFish = _.map(someFish, function(age) {
+            let newAge = age - 1;
+            if ( newAge === -1 ) {
+                newAge = 6;
+                babies++;
+            }
+            return newAge;
+        });
+        _.times(babies, function(n){ newFish.push(8); });
+
+        someFish = newFish;
+    }
+
+    return someFish.length;
+}
+
+
+/**
+ * So, suppose you have a lanternfish with an internal timer value of 3:
+ *   After one day, its internal timer would become 2.
+ *   After another day, its internal timer would become 1.
+ *   After another day, its internal timer would become 0.
+ *   After another day, its internal timer would reset to 6, and it would create a new lanternfish with an internal timer of 8.
+ *   After another day, the first lanternfish would have an internal timer of 5, and the second lanternfish would have an internal timer of 7.
+ * 
+ * A lanternfish that creates a new fish resets its timer to 6, not 7 (because 0 is included as a valid timer value). 
+ * The new lanternfish starts with an internal timer of 8 and does not start counting down until the next day. Each day, a 0 becomes a 6 
+ * and adds a new 8 to the end of the list, while each other number decreases by 1 if it was present at the start of the day.
+ * 
+ * Find a way to simulate lanternfish. How many lanternfish would there be after 80 days?
+ * 
+ * With a large number of days (like, over 140), our array gets into the millions of elements and the original method
+ *  does not finish.  Trying a better way to handle big data.
+ * 
+ * @param {*} someFish  Array of fish ages
+ * @param {*} days      Days to model
+ */
+ function trackFishGrowth2(someFish, days) {
+
+    // Sort our initial fish ages, and make a dictionary of ages and counts
+    let sortedFish = _.sortBy(someFish, function(age) { return age; });
+    let newFish = _.countBy(sortedFish, function(age) { return age; });
+
+    // Now newFish["1"]=88, ["2"]=45, etc.
+    // For <days> days...
+    for ( var day = 1; day <= days; day++ ) {
+        // For each fish age group...
+        let zeros = newFish["1"] || 0;
+        let ones = newFish["2"] || 0;
+        let twos = newFish["3"] || 0;
+        let threes = newFish["4"] || 0;
+        let fours = newFish["5"] || 0;
+        let fives = newFish["6"] || 0;
+        let sixes = (newFish["7"] + newFish["0"]) || 0;
+        let sevens = newFish["8"] || 0;
+        let eights = newFish["0"] || 0;
+
+        newFish["0"] = zeros;
+        newFish["1"] = ones;
+        newFish["2"] = twos;
+        newFish["3"] = threes;
+        newFish["4"] = fours;
+        newFish["5"] = fives;
+        newFish["6"] = sixes;
+        newFish["7"] = sevens;
+        newFish["8"] = eights;
+    }
+
+    return _.reduce(newFish, function(sum, num) { return sum + num }, 0);
 }
