@@ -43,14 +43,10 @@ console.info("    #4b: To lose, I should play the board with a value of:", findW
 
 // Day 5a: Avoid overlapping heat vents
 console.info("Day #5a: Avoiding overlapping heat vent locations, without diagonals, of which there are", findOverlappingVents(inputData.someHeatVents, true));
-
-// Day 5b: Avoid overlapping heat vents
 console.info("    #5b: Avoiding overlapping heat vent locations, of which there are", findOverlappingVents(inputData.someHeatVents, false));
 
 // Day 6a: Laternfish growth rates
 console.info("Day #6a: After 80 days we'll have this many laternfish:", trackFishGrowth(inputData.someFish, 80));
-
-// Day 6b: Laternfish growth rates
 console.info("    #6b: After 256 days we'll have this many laternfish:", trackFishGrowth2(inputData.someFish, 256));
 
 // Day 7a: Horizontally align crab positions w/ the least possible work
@@ -63,8 +59,11 @@ console.info("    #7b: Crabs should align to position", result[0], "at a cost of
 
 // Day 8a & b: What the ?
 console.info("Day #8a: No of outputs using 1, 4, 7, 8:", decipherSignals(inputData.sevenSignals));
-console.info("    #8b: Decode all output values, the sum of which is", decipherSignals2(inputData.sevenSignals));
+console.info("    #8b: Decode all output values, the sum of which is:", decipherSignals2(inputData.sevenSignals));
 
+// Day 9
+console.info("Day #9a: Low point analysis finds a total value of:", findLowPoints(inputData.someHeights));
+console.info("    #9b: The product of the sizes of the three largest basins is:", findBasins(inputData.someHeights));
 
 /**
  * Day #1a: Determine the nuber of times the depth increases
@@ -780,15 +779,7 @@ function decipherSignals(someSignals) {
  * For each entry, determine all of the wire/segment connections and decode the four-digit output values. 
  * What do you get if you add up all of the output values?
  * 
- * 1        - 2 segments
- * 7        - 3 segments
- * 4        - 4 segments
- * 2, 3, 5  - 5 segments
- * 0, 6, 9  - 6 segments
- * 8        - 7 segments 
- * 
  * RULES:
- * ------
  * 2 Segments => 1
  * 3 Segments => 7
  * 4 Segments => 4
@@ -906,4 +897,219 @@ function countSameSegs(knownSegs, unknownSegs) {
         if ( unknownSegs.includes(knownSegs.substr(i, 1)) ) count++;
     }
     return count;
+}
+
+
+/**
+ * Smoke flows to the lowest point of the area it's in. For example, consider the following heightmap:
+ * 
+ * 2199943210
+ * 3987894921
+ * 9856789892
+ * 8767896789
+ * 9899965678
+ * 
+ * Each number corresponds to the height of a particular location, where 9 is the highest and 0 is the lowest a location can be.
+ * 
+ * Your first goal is to find the low points - the locations that are lower than any of its adjacent locations. Most locations have 
+ *  four adjacent locations (up, down, left, and right); locations on the edge or corner of the map have three or two adjacent 
+ *  locations, respectively. (Diagonal locations do not count as adjacent.)
+ * 
+ * In the above example, there are four low points, all highlighted: two are in the first row (a 1 and a 0), one is in the third 
+ *  row (a 5), and one is in the bottom row (also a 5). All other locations on the heightmap have some lower adjacent location, 
+ *  and so are not low points.
+ * 
+ * The risk level of a low point is 1 plus its height. In the above example, the risk levels of the low points are 2, 1, 6, and 6. 
+ *  The sum of the risk levels of all low points in the heightmap is therefore 15.
+ * 
+ * Find all of the low points on your heightmap. What is the sum of the risk levels of all low points on your heightmap?
+ * 
+ * @param {*} someHeights 
+ */
+function findLowPoints( someHeights ) {
+
+    // Find all numbers where every adjacent number is higher.  Add 1 to each, and sum them up for the solution.
+    let solution = 0;
+    let height = someHeights.length;
+    let width = someHeights[0].length;
+    let lowPoints = [];
+
+    // Make it into a 2D array
+    someHeights = _.each(someHeights, function(height, idx, list) {
+        height = height.split("");
+    });
+
+    // For every row
+    for ( let currRow = 0; currRow <= height; currRow++ ) {
+        // For every column
+        for ( let currCol = 0; currCol <= width; currCol++ ) {
+            // Determine if it is lower than adjacent points.
+            let point = isLowPoint(currRow, currCol, someHeights);
+            if ( point !== Constants.NOT_A_LOW_POINT ) {
+                lowPoints.push( point );
+            }
+        }
+    }
+
+    // Sum up all low point heights + 1 each, and eturn
+    return _.reduce(lowPoints, function(sum, point) {
+        return sum + (point + 1);
+    }, 0);
+}
+
+
+/**
+ * Determine if a point is lower than its adjacent points in a 2D array
+ * 
+ * @param {*} row 
+ * @param {*} col 
+ * @param {*} map 
+ * @returns 
+ */
+function isLowPoint(row, col, map) {
+
+    let point = null;
+    let adjacents = [];
+
+    // NOTE: Upper left of the m ap is 0, 0
+    point = getHeight(row, col, map);
+    adjacents[0] = getHeight(row-1, col, map);
+    adjacents[1] = getHeight(row+1, col, map);
+    adjacents[2] = getHeight(row, col-1, map);
+    adjacents[3] = getHeight(row, col+1, map);
+
+    if ((point < adjacents[0]) && (point < adjacents[1]) && (point < adjacents[2]) && (point < adjacents[3])) {
+        return point;
+    } else {
+        return Constants.NOT_A_LOW_POINT;
+    }
+}
+
+
+/**
+ * Yank a point out of our 2D "map" of low points, with handling for misses on the arrays.
+ * 
+ * @param {*} row 
+ * @param {*} col 
+ * @param {*} map 
+ * @returns 
+ */
+function getHeight(row, col, map) {
+    let height = 9;
+    try {
+        height = map[row][col];
+        if ( height === undefined ) height = 9;
+    }
+    catch {
+        // Nothing, don't care
+        height = 9;
+    }
+    return parseInt(height);
+}
+
+
+/**
+ * A basin is all locations that eventually flow downward to a single low point. Therefore, every low point has a basin, 
+ *  although some basins are very small. Locations of height 9 do not count as being in any basin, and all other locations 
+ *  will always be part of exactly one basin.
+ *  
+ * The size of a basin is the number of locations within the basin, including the low point. The example above has four basins.
+ * What do you get if you multiply together the sizes of the three largest basins?
+ * 
+ * @param {*} someHeights 
+ */
+function findBasins( someHeights ) {
+    let solution = 0;
+    let height = someHeights.length;
+    let width = someHeights[0].length;
+    let someBasinSizes = [];
+
+    // Make it into a 2D array
+    someHeights = _.each(someHeights, function(height, idx, list) {
+        height = height.split("");
+    });
+
+    // For every row
+    for ( let currRow = 0; currRow <= height; currRow++ ) {
+        // For every column
+        for ( let currCol = 0; currCol <= width; currCol++ ) {
+            // Determine if it is lower than adjacent points.
+            let point = isLowPoint(currRow, currCol, someHeights);
+            if ( point !== Constants.NOT_A_LOW_POINT ) {
+                // OK, find the basin surrounding the low point.  
+                // We need it's "size"...the number of locations.
+                // +1 because the low point counts too.
+                let basinSize = findAdjacentHigher([[currRow, currCol]], [[currRow, currCol]], someHeights);
+                someBasinSizes.push(basinSize);
+            }
+        }
+    }   
+    someBasinSizes = _.sortBy(someBasinSizes, function(num){ return num; });
+    return someBasinSizes.pop() * someBasinSizes.pop() * someBasinSizes.pop();
+}
+
+
+/**
+ * Recursive function to find all adjacent higher locations that are NOT 9s
+ * 
+ * @param {*} allBasinPoints All points in our basin
+ * @param {*} pointsToCheck  Points that we need to examine further
+ * @param {*} map            Map of cave depths
+ */
+function findAdjacentHigher(allBasinPoints, pointsToCheck, map) {
+
+    // 2199943210
+    // 3987894921
+    // 9856789892
+    // 8767896789
+    // 9899965678
+    let aPoint = pointsToCheck.pop();
+    let row = aPoint[0];
+    let col = aPoint[1];
+    let adjacents = [];
+    let point = getHeight(row, col, map);
+    adjacents[0] = getHeight(row-1, col, map);
+    adjacents[1] = getHeight(row+1, col, map);
+    adjacents[2] = getHeight(row, col-1, map);
+    adjacents[3] = getHeight(row, col+1, map);
+
+    if ( (adjacents[0] > point) && (adjacents[0] !== 9) ) {
+        newBasinPoint(allBasinPoints, pointsToCheck, [row-1, col]);
+    }   
+    if ( (adjacents[1] > point) && (adjacents[1] !== 9) ) {
+        newBasinPoint(allBasinPoints, pointsToCheck, [row+1, col]);
+    }   
+    if ( (adjacents[2] > point) && (adjacents[2] !== 9) ) {
+        newBasinPoint(allBasinPoints, pointsToCheck, [row, col-1]);
+    }   
+    if ( (adjacents[3] > point) && (adjacents[3] !== 9) ) {
+        newBasinPoint(allBasinPoints, pointsToCheck, [row, col+1]);
+    }   
+
+    if ( pointsToCheck.length > 0 ) {
+        findAdjacentHigher(allBasinPoints, pointsToCheck, map);
+    }
+
+    return allBasinPoints.length;
+}
+
+
+/**
+ * Add a new point to our (a) all basin points array, and (b) array of points to check out if it isn't already in there.
+ * 
+ * @param {*} allBasinPoints All points in our basin
+ * @param {*} pointsToCheck  Points that we need to examine further
+ * @param {*} newPoint       The new point to add
+ * @returns                  undefined
+ */
+function newBasinPoint(allBasinPoints, pointsToCheck, newPoint) {
+
+    // Don't go and check it if we already have checked it
+    for( let i = 0; i < allBasinPoints.length; i++ ) {
+        let aPoint = allBasinPoints[i];
+        if ((newPoint[0] === aPoint[0]) && (newPoint[1] === aPoint[1])) return;
+    }
+
+    pointsToCheck.push(newPoint);
+    allBasinPoints.push(newPoint);
 }
