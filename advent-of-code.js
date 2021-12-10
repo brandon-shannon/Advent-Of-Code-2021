@@ -61,9 +61,9 @@ console.info("Day #7a: Crabs should align to position", result[0], "at a cost of
 result = alignCrabs2(inputData.someCrabPositions);
 console.info("    #7b: Crabs should align to position", result[0], "at a cost of", result[1]);
 
-// Day 8a: What the ?
+// Day 8a & b: What the ?
 console.info("Day #8a: No of outputs using 1, 4, 7, 8:", decipherSignals(inputData.sevenSignals));
-
+console.info("    #8b: Decode all output values, the sum of which is", decipherSignals2(inputData.sevenSignals));
 
 
 /**
@@ -759,7 +759,7 @@ function alignCrabs2(someCrabPos) {
  * 7 - 3 segments
  * 8 - 7 segments 
  * 
- * @param {*} sevenSignals 
+ * @param {*} someSignals 
  */
 function decipherSignals(someSignals) {
     let count = 0;
@@ -772,5 +772,138 @@ function decipherSignals(someSignals) {
         }, 0);
         count = count + sum;
     });
+    return count;
+}
+
+
+/**
+ * For each entry, determine all of the wire/segment connections and decode the four-digit output values. 
+ * What do you get if you add up all of the output values?
+ * 
+ * 1        - 2 segments
+ * 7        - 3 segments
+ * 4        - 4 segments
+ * 2, 3, 5  - 5 segments
+ * 0, 6, 9  - 6 segments
+ * 8        - 7 segments 
+ * 
+ * RULES:
+ * ------
+ * 2 Segments => 1
+ * 3 Segments => 7
+ * 4 Segments => 4
+ * 5 Segments (2 | 3 | 5)
+ *   if 2 semgnets overlap with a 1, it's a 3
+ *   if 2 segemnts overlap with a 4, it's a 2
+ *   Otherwise, it's a 5
+ *   X 3 if 3 common segments with 7
+ *   X 5 if 3 common segments with 4
+ *   otherwise, 2
+ * 6 Segments (0 | 6 | 9)
+ *   if 1 segment overlaps with a 1, it's a 6
+ *   if 3 segments overlap with a 4, it's a 0
+ *   otherwise, 9
+ *   X 9 if 4 common segments with 4
+ *   X 6 if 3 common segments with 7
+ *   otherwise 0
+ * 7 Segments => 8
+ * 
+ *  0:      1:      2:      3:      4:
+ *   aaaa    ....    aaaa    aaaa    ....
+ *  b    c  .    c  .    c  .    c  b    c
+ *  b    c  .    c  .    c  .    c  b    c
+ *   ....    ....    dddd    dddd    dddd
+ *  e    f  .    f  e    .  .    f  .    f
+ *  e    f  .    f  e    .  .    f  .    f
+ *   gggg    ....    gggg    gggg    ....
+ *
+ *   5:      6:      7:      8:      9:
+ *   aaaa    aaaa    aaaa    aaaa    aaaa
+ *  b    .  b    .  .    c  b    c  b    c
+ *  b    .  b    .  .    c  b    c  b    c
+ *   dddd    dddd    ....    dddd    dddd
+ *  .    f  e    f  .    f  e    f  .    f
+ *  .    f  e    f  .    f  e    f  .    f
+ *   gggg    gggg    ....    gggg    gggg 
+ *
+ *  
+ * @param {*} someSignals 
+ */
+ function decipherSignals2(someSignals) {
+    
+    let total = 0;
+
+    // For each coded message
+    _.each(someSignals, function( aSignal, idx, list) {
+        // Split the inputs from the outputs
+        let parts = aSignal.split("|");
+        let someInputs = parts[0].trim().split(" ");
+        let someOutputs = parts[1].trim().split(" ");
+
+        // Sort input segments by length
+        // Find our knowns (1, 4, 7, 8) to use to decode our unknowns
+        someInputs = _.sortBy(someInputs, function(input) { return input.length; });
+
+        // For each segment
+        let decoder = {};
+        let oneSegs = "", fourSegs = "";
+        _.each(someInputs, function(input, idx, list) {
+            input = input.split("").sort().join("");
+            switch (input.length) {
+                case 2: 
+                    decoder[input] = 1;
+                    oneSegs = input;
+                    break;
+                case 3: 
+                    decoder[input] = 7;
+                    break;
+                case 4:
+                    decoder[input] = 4;
+                    fourSegs = input;
+                    break;
+                case 7:
+                    decoder[input] = 8;
+                    break;
+                case 5:
+                    if ( countSameSegs(oneSegs, input) === 2 )
+                        decoder[input] = 3;
+                    else if ( countSameSegs(fourSegs, input) == 2 )
+                        decoder[input] = 2;
+                    else
+                        decoder[input] = 5;
+                    break;
+                case 6:
+                    if ( countSameSegs(oneSegs, input) === 1 )
+                        decoder[input] = 6;
+                    else if ( countSameSegs(fourSegs, input) == 3 )
+                        decoder[input] = 0;
+                    else
+                        decoder[input] = 9;
+                    break;
+            }
+        });
+
+        // Translate outputs into four digit numbers, and sum them up
+        let aNumber = _.reduce(someOutputs, function(fullNumber, output) {
+            let newNumber = decoder[output.split("").sort().join("")];
+            return fullNumber + newNumber;
+        }, "");
+        total = total + parseInt(aNumber);
+    });
+    return total;
+}
+
+
+/**
+ * Finds overlapping segments in two strings (i.e., common characters)
+ * 
+ * @param {*} knownSegs 
+ * @param {*} unknownSegs 
+ */
+function countSameSegs(knownSegs, unknownSegs) {
+    let count = 0 
+    for ( let i = 0; i < knownSegs.length; i++ ) {
+        if ( unknownSegs.includes(knownSegs.substr(i, 1)) ) count++;
+    }
     return count;
 }
